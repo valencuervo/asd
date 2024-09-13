@@ -5,96 +5,96 @@
 
 using namespace std;
 
-const int WIDTH = 5;   // Ancho del tablero
-const int HEIGHT = 5;  // Alto del tablero
-const int MINES = 5;   // N�mero de minas
+const int ANCHO = 5;   // Ancho del tablero
+const int ALTO = 5;    // Alto del tablero
+const int MINAS = 5;   // Número de minas
 
-enum Cell { HIDDEN, REVEALED, FLAGGED };
+enum Estado { OCULTO, REVELADO, MARCADO };
 
-struct CellInfo {
-    int mineCount;
-    Cell state;
-    bool hasMine;
+struct Celda {
+    int cantidadMinas;
+    Estado estado;
+    bool tieneMina;
 };
 
-class SimpleMinesweeper {
+class Buscaminas {
 public:
-    SimpleMinesweeper();
-    void Run();
+    Buscaminas();
+    void Ejecutar();
 
 private:
-    vector<vector<CellInfo>> board;
-    vector<vector<CellInfo>> displayBoard;
-    bool gameOver;
+    vector<vector<Celda>> tablero;
+    vector<vector<Celda>> tableroMostrado;
+    bool juegoTerminado;
 
-    void Setup();
-    void DrawBoard();
-    void Input();
-    void RevealCell(int x, int y);
-    void FlagCell(int x, int y);
-    void RevealAdjacentCells(int x, int y);
-    bool IsWin();
-    void PlaceMines();
-    void CalculateMineCounts();
+    void InicializarTablero();
+    void MostrarTablero();
+    void RealizarAccion();
+    void RevelarCelda(int x, int y);
+    void MarcarCelda(int x, int y);
+    void RevelarCeldasAdyacentes(int x, int y);
+    bool VerificarVictoria();
+    void ColocarMinas();
+    void CalcularMinasAdyacentes();
 };
 
-SimpleMinesweeper::SimpleMinesweeper() : gameOver(false) {
-    Setup();
+Buscaminas::Buscaminas() : juegoTerminado(false) {
+    InicializarTablero();
 }
 
-void SimpleMinesweeper::Setup() {
-    board.resize(HEIGHT, vector<CellInfo>(WIDTH));
-    displayBoard.resize(HEIGHT, vector<CellInfo>(WIDTH));
+void Buscaminas::InicializarTablero() {
+    tablero.resize(ALTO, vector<Celda>(ANCHO));
+    tableroMostrado.resize(ALTO, vector<Celda>(ANCHO));
 
-    PlaceMines();
-    CalculateMineCounts();
+    ColocarMinas();
+    CalcularMinasAdyacentes();
 }
 
-void SimpleMinesweeper::PlaceMines() {
+void Buscaminas::ColocarMinas() {
     srand(time(0));
-    int minesPlaced = 0;
-    while (minesPlaced < MINES) {
-        int x = rand() % HEIGHT;
-        int y = rand() % WIDTH;
-        if (!board[x][y].hasMine) {
-            board[x][y].hasMine = true;
-            ++minesPlaced;
+    int minasColocadas = 0;
+    while (minasColocadas < MINAS) {
+        int x = rand() % ALTO;
+        int y = rand() % ANCHO;
+        if (!tablero[x][y].tieneMina) {
+            tablero[x][y].tieneMina = true;
+            ++minasColocadas;
         }
     }
 }
 
-void SimpleMinesweeper::CalculateMineCounts() {
-    for (int x = 0; x < HEIGHT; ++x) {
-        for (int y = 0; y < WIDTH; ++y) {
-            if (board[x][y].hasMine) continue;
-            int mineCount = 0;
+void Buscaminas::CalcularMinasAdyacentes() {
+    for (int x = 0; x < ALTO; ++x) {
+        for (int y = 0; y < ANCHO; ++y) {
+            if (tablero[x][y].tieneMina) continue;
+            int cantidad = 0;
             for (int dx = -1; dx <= 1; ++dx) {
                 for (int dy = -1; dy <= 1; ++dy) {
                     int nx = x + dx;
                     int ny = y + dy;
-                    if (nx >= 0 && nx < HEIGHT && ny >= 0 && ny < WIDTH && board[nx][ny].hasMine) {
-                        ++mineCount;
+                    if (nx >= 0 && nx < ALTO && ny >= 0 && ny < ANCHO && tablero[nx][ny].tieneMina) {
+                        ++cantidad;
                     }
                 }
             }
-            board[x][y].mineCount = mineCount;
+            tablero[x][y].cantidadMinas = cantidad;
         }
     }
 }
 
-void SimpleMinesweeper::DrawBoard() {
-    system("cls");  // Limpia la pantalla (espec�fico de Windows)
-    for (int x = 0; x < HEIGHT; ++x) {
-        for (int y = 0; y < WIDTH; ++y) {
-            if (displayBoard[x][y].state == HIDDEN) {
+void Buscaminas::MostrarTablero() {
+    system("cls");  // Limpia la pantalla (específico de Windows)
+    for (int x = 0; x < ALTO; ++x) {
+        for (int y = 0; y < ANCHO; ++y) {
+            if (tableroMostrado[x][y].estado == OCULTO) {
                 cout << "# ";
-            } else if (displayBoard[x][y].state == FLAGGED) {
+            } else if (tableroMostrado[x][y].estado == MARCADO) {
                 cout << "F ";
             } else {
-                if (board[x][y].hasMine) {
+                if (tablero[x][y].tieneMina) {
                     cout << "* ";
                 } else {
-                    cout << board[x][y].mineCount << ' ';
+                    cout << tablero[x][y].cantidadMinas << ' ';
                 }
             }
         }
@@ -102,67 +102,67 @@ void SimpleMinesweeper::DrawBoard() {
     }
 }
 
-void SimpleMinesweeper::Input() {
-    char command;
+void Buscaminas::RealizarAccion() {
+    char accion;
     int x, y;
-    cout << "Enter command (r for reveal, f for flag), and coordinates (x y): ";
-    cin >> command >> x >> y;
+    cout << "Ingresa acción (r para revelar, m para marcar) y coordenadas (fila columna): ";
+    cin >> accion >> x >> y;
 
-    if (x < 0 || x >= HEIGHT || y < 0 || y >= WIDTH) {
-        cout << "Invalid coordinates. Try again." << endl;
+    if (x < 0 || x >= ALTO || y < 0 || y >= ANCHO) {
+        cout << "Coordenadas inválidas. Intenta de nuevo." << endl;
         return;
     }
 
-    if (command == 'r') {
-        RevealCell(x, y);
-    } else if (command == 'f') {
-        FlagCell(x, y);
+    if (accion == 'r') {
+        RevelarCelda(x, y);
+    } else if (accion == 'm') {
+        MarcarCelda(x, y);
     }
 }
 
-void SimpleMinesweeper::RevealCell(int x, int y) {
-    if (displayBoard[x][y].state != HIDDEN) return;
+void Buscaminas::RevelarCelda(int x, int y) {
+    if (tableroMostrado[x][y].estado != OCULTO) return;
 
-    displayBoard[x][y].state = REVEALED;
+    tableroMostrado[x][y].estado = REVELADO;
 
-    if (board[x][y].hasMine) {
-        gameOver = true;
+    if (tablero[x][y].tieneMina) {
+        juegoTerminado = true;
         return;
     }
 
-    if (board[x][y].mineCount == 0) {
-        RevealAdjacentCells(x, y);
+    if (tablero[x][y].cantidadMinas == 0) {
+        RevelarCeldasAdyacentes(x, y);
     }
 
-    if (IsWin()) {
-        gameOver = true;
-    }
-}
-
-void SimpleMinesweeper::FlagCell(int x, int y) {
-    if (displayBoard[x][y].state == HIDDEN) {
-        displayBoard[x][y].state = FLAGGED;
-    } else if (displayBoard[x][y].state == FLAGGED) {
-        displayBoard[x][y].state = HIDDEN;
+    if (VerificarVictoria()) {
+        juegoTerminado = true;
     }
 }
 
-void SimpleMinesweeper::RevealAdjacentCells(int x, int y) {
+void Buscaminas::MarcarCelda(int x, int y) {
+    if (tableroMostrado[x][y].estado == OCULTO) {
+        tableroMostrado[x][y].estado = MARCADO;
+    } else if (tableroMostrado[x][y].estado == MARCADO) {
+        tableroMostrado[x][y].estado = OCULTO;
+    }
+}
+
+void Buscaminas::RevelarCeldasAdyacentes(int x, int y) {
     for (int dx = -1; dx <= 1; ++dx) {
         for (int dy = -1; dy <= 1; ++dy) {
             int nx = x + dx;
             int ny = y + dy;
-            if (nx >= 0 && nx < HEIGHT && ny >= 0 && ny < WIDTH) {
-                RevealCell(nx, ny);
+            if (nx >= 0 && nx < ALTO && ny >= 0 && ny < ANCHO) {
+                RevelarCelda(nx, ny);
             }
         }
     }
 }
 
-bool SimpleMinesweeper::IsWin() {
-    for (int x = 0; x < HEIGHT; ++x) {
-        for (int y = 0; y < WIDTH; ++y) {
-            if (!board[x][y].hasMine && displayBoard[x][y].state == HIDDEN) {
+bool Buscaminas::VerificarVictoria() {
+    for (int x = 0; x < ALTO; ++x) {
+        for (int y = 0; y < ANCHO; ++y) {
+            if (!tablero[x][y].tieneMina && tableroMostrado[x][y].estado == OCULTO) {
                 return false;
             }
         }
@@ -170,24 +170,25 @@ bool SimpleMinesweeper::IsWin() {
     return true;
 }
 
-void SimpleMinesweeper::Run() {
-    while (!gameOver) {
-        DrawBoard();
-        Input();
+void Buscaminas::Ejecutar() {
+    while (!juegoTerminado) {
+        MostrarTablero();
+        RealizarAccion();
     }
 
-    DrawBoard();
-    if (gameOver && IsWin()) {
-        cout << "Congratulations! You've won!" << endl;
-    } else if (gameOver) {
-        cout << "Game Over! You hit a mine." << endl;
+    MostrarTablero();
+    if (juegoTerminado && VerificarVictoria()) {
+        cout << "¡Felicidades! Has ganado." << endl;
+    } else if (juegoTerminado) {
+        cout << "¡Juego terminado! Has pisado una mina." << endl;
     }
 }
 
 int main() {
-    SimpleMinesweeper game;
-    game.Run();
+    Buscaminas juego;
+    juego.Ejecutar();
     return 0;
 }
+
 
 
